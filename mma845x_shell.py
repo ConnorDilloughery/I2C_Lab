@@ -82,7 +82,7 @@ class MMA845x:
     The example code works for an MMA8452 on a SparkFun<sup>TM</sup> breakout
     board. """
 
-    def __init__ (self, i2c, address, accel_range = 0):
+    def __init__ (self, i2c, address, accel_range = RANGE_8g):
         """! Initialize an MMA845x driver on the given I<sup>2</sup>C bus. The 
         I<sup>2</sup>C bus object must have already been initialized, as we're
         going to use it to get the accelerometer's WHO_AM_I code right away. 
@@ -135,45 +135,63 @@ class MMA845x:
         be made, one must call @c active(). """
 
         if self._works:
-            reg1 = ord (self._i2c.mem_read (1, self._addr, CTRL_REG1))
+            reg1 = ord (self.i2c.mem_read (1, self.addr, CTRL_REG1))
             reg1 &= ~0x01
-            self._i2c.mem_write (chr (reg1 & 0xFF), self._addr, CTRL_REG1)
+            self.i2c.mem_write (chr (reg1 & 0xFF), self.addr, CTRL_REG1)
 
 
     def get_ax_bits (self):
         """! Get the X acceleration from the accelerometer in A/D bits and 
         return it.
         @return The measured X acceleration in A/D conversion bits """
+        self.X_bits= self.i2c.mem_read(2, self.addr, OUT_X_MSB)
+        
 
-        print ('MMA845x clueless about X acceleration')
-        return 0
+        
+        #Array = int.from_bytes( Array, "big")
+        
+        #print ('MMA845x clueless about X acceleration')
+        return self.X_bits
 
 
     def get_ay_bits (self):
         """! Get the Y acceleration from the accelerometer in A/D bits and 
         return it.
         @return The measured Y acceleration in A/D conversion bits """
+        self.Y_bits= self.i2c.mem_read(2, self.addr, OUT_Y_MSB)
+        
 
-        print ('MMA845x clueless about Y acceleration')
-        return 0
+        
+        #Array = int.from_bytes( Array, "big")
+        
+        
+       # print ('MMA845x clueless about Y acceleration')
+        return self.Y_bits
 
 
     def get_az_bits (self):
         """! Get the Z acceleration from the accelerometer in A/D bits and 
         return it.
         @return The measured Z acceleration in A/D conversion bits """
+        self.Z_bits= self.i2c.mem_read(2, self.addr, OUT_Z_MSB)
+        
 
+        
+        #Array = int.from_bytes( Array, "big")
         print ('MMA845x clueless about Z acceleration')
-        return 0
+        return self.Z_bits
 
 
     def get_ax (self):
         """! Get the X acceleration from the accelerometer in g's, assuming
         that the accelerometer was correctly calibrated at the factory.
         @return The measured X acceleration in g's """
+        self.Calibration_Constant= 16000
+        
+        self.X_Acceleration= self.X_bits/self.Calibration_Constant
 
-        print ('MMA845x uncalibrated X')
-        return 0
+        #print ('MMA845x uncalibrated X')
+        return self.X_Acceleration
 
 
     def get_ay (self):
@@ -181,9 +199,11 @@ class MMA845x:
         that the accelerometer was correctly calibrated at the factory. The
         measurement is adjusted for the range (2g, 4g, or 8g) setting.
         @return The measured Y acceleration in g's """
+        
+        self.Y_Acceleration= self.Y_bits/self.Calibration_Constant
 
-        print ('MMA845x uncalibrated Y')
-        return 0
+        #print ('MMA845x uncalibrated Y')
+        return self.Y_Acceleration
 
 
     def get_az (self):
@@ -191,9 +211,10 @@ class MMA845x:
         that the accelerometer was correctly calibrated at the factory. The
         measurement is adjusted for the range (2g, 4g, or 8g) setting.
         @return The measured Z acceleration in g's """
+        self.Z_Acceleration= self.Z_bits/self.Calibration_Constant
 
-        print ('MMA845x uncalibrated Z')
-        return 0
+        #print ('MMA845x uncalibrated Z')
+        return self.Z_Acceleration
 
 
     def get_accels (self):
@@ -220,3 +241,18 @@ class MMA845x:
             diag_str += 'active' if reg1 & 0x01 else 'standby'
 
             return diag_str
+
+
+def main():
+    Accelerometer= MMA845x(pyb.I2C (1, pyb.I2C.MASTER, baudrate = 100000), 29)
+    
+    Accelerometer.active()
+    Hello= [Accelerometer.get_ax_bits(), Accelerometer.get_ay_bits(), Accelerometer.get_az_bits()]
+    Hello= [Accelerometer.X_Acceleration, Accelerometer.Y_Acceleration, Accelerometer.Z_Acceleration] 
+    print(Hello)
+    
+    
+if __name__ == "__main__":
+    main()
+
+
